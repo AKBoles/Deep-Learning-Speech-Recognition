@@ -56,3 +56,36 @@ Essentially, assuming the data is already downloaded, the script does the follow
     ~~~
     
     These lines are defining a network that looks like the following image:
+    
+    ![Original Network Image](https://github.com/AKBoles/Deep-Learning-Speech-Recognition/blob/master/images/PannousSpeakerClassification.png)
+    
+    As can be seen, the data is first input into `FC1` (or the first fully connected layer) and then into the dropout and then the second fully connected layer. Note that `FC2` (second fully connected layer) is the first to connect to `Accuracy` and `Crossentropy`. This is because `FC2` feeds directly into `Regress1` which performs a regression using cross entropy.
+    
+4. The next step in the script is to train the model using the defined network. Using TFLearn, this only requires two lines of code:
+
+    ~~~python
+    model = tflearn.DNN(net)
+    model.fit(X, Y, n_epoch=100, show_metric=True, snapshot_step=100)
+    ~~~
+    
+    The first line defined the Deep Neural Network model as `tflearn.DNN(net)` where `net` is defined in the step above.
+    
+    The second line defines the input data / labels to feed into the model, as well as the number of epochs to train over. Additional output information is defined as well with the `show_metric` and `snapshot_step` arguments. These two simply tell the script to output the metric and show a snapshot of the training every `snapshot_step` number of training steps.
+    
+5. Finally, the trained model is tested using a sample audio file. As far as I could tell, the file being used was also in the training dataset. I did not think this was appropriate so I removed the specified file from the training data set and placed it aside for testing after the model was trained.
+
+    The following lines of code show how the model is tested with a new value:
+    
+    ~~~python
+    demo_file = "8_Bruce_260.wav"
+    demo=data.load_wav_file(demo_file)
+    result=model.predict([demo])
+    result=data.one_hot_to_item(result,speakers)
+    print("predicted speaker for %s : result = %s "%(demo_file,result))
+    ~~~
+    
+    As can be seen, the `demo_file` is fed into `model.predict`. This creates a one-hot vector which is then converted into an individual speaker using `one_hot_to_item`. The following image shows a screenshot of the last couple of epochs and the output of the script being run:
+    
+    ![Original Network Output](https://github.com/AKBoles/Deep-Learning-Speech-Recognition/blob/master/images/PannousSpeakerClassOutput.png)
+    
+    The result is as hoped: Bruce was speaking and Bruce was predicted! That is good news. The next step is to perform this architecture using a different data set.
