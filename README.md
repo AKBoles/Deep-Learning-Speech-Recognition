@@ -17,3 +17,8 @@ The data being used for this project can be found at: http://www.openslr.org/12/
    
        Github link: https://github.com/pannous/tensorflow-speech-recognition/
    
+       To see more of an in-depth walkthrough of how Pannous approaches the speaker classification problem, please see `Pannous-Walkthrough.md`.
+       
+### Work To-Be-Done ###
+
+   1. Implement `speaker_classifier_tflearn.py` using our dataset. For this to be completed, it is necessary to first rename / reorganize the dataset that we wish to use for the project. This is to be done first! More to be added as they are completed.
