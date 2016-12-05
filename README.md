@@ -11,6 +11,12 @@ Course Github Link: https://github.com/ml6973/Course
 
 The data being used for this project can be found at: http://www.openslr.org/12/ . Openslr is an open source project dedicated to hosting speech and language resources, hoping to assist the progress of speech recognition.
 
+## Description of Data ##
+
+`dev-clean` - Small dataset containing 41 different speakers with 
+
+`train-clean-100` - 
+
 ### Previous Work Done ###
 
    1. Pannous is a project that is working on implementing Speech Recognition in Google's Tensorflow. 
