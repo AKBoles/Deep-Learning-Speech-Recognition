@@ -16,25 +16,11 @@ from random import shuffle
 from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-# TRAIN_INDEX='train_words_index.txt'
-# TEST_INDEX='test_words_index.txt'
-SOURCE_URL = 'http://pannous.net/files/' #spoken_numbers.tar'
-DATA_DIR = 'data/'
-pcm_path = "/home/cc/Data/spoken_numbers_pcm/" # 8 bit
-wav_path = "data/spoken_numbers_wav/" # 16 bit s16le
-path = pcm_path
-CHUNK = 4096
-test_fraction=0.1 # 10% of data for test / verification
-
-# http://pannous.net/files/spoken_numbers_pcm.tar
 class Source:  # labels
-  NUMBER_WAVES = 'spoken_numbers_wav.tar'
-  DIGIT_WAVES = 'spoken_numbers_pcm.tar'
-  DIGIT_SPECTROS = 'spoken_numbers_spectros_64x64.tar'  # 64x64  baby data set, works astonishingly well
-  NUMBER_IMAGES = 'spoken_numbers.tar'  # width=256 height=256
-  SPOKEN_WORDS = 'https://dl.dropboxusercontent.com/u/23615316/spoken_words.tar'  # width=512  height=512# todo: sliding window!
-  TEST_INDEX = 'test_index.txt'
-  TRAIN_INDEX = 'train_index.txt'
+  DATA_DIR = '/home/cc/Data/'
+  test_fraction = 0.1 # used for testing
+  train100_path = '/home/cc/Data/train-100-clean/' # 100 GB training data
+  CHUNK = 4096
 
 from enum import Enum
 class Target(Enum):  # labels
@@ -47,39 +33,18 @@ class Target(Enum):  # labels
   sentiment=7
   first_letter=8
 
-
-def maybe_download(file, work_directory):
-  """Download the data from Pannous's website, unless it's already here."""
-  print("Looking for data %s in %s"%(file,work_directory))
-  if not os.path.exists(work_directory):
-    os.mkdir(work_directory)
-  filepath = os.path.join(work_directory, re.sub('.*\/','',file))
-  if not os.path.exists(filepath):
-    if not file.startswith("http"): url_filename = SOURCE_URL + file
-    else: url_filename=file
-    print('Downloading from %s to %s' % (url_filename, filepath))
-    filepath, _ = urllib.request.urlretrieve(url_filename, filepath)
-    statinfo = os.stat(filepath)
-    print('Successfully downloaded', file, statinfo.st_size, 'bytes.')
-    # os.system('ln -s '+work_directory)
-  if os.path.exists(filepath):
-    print('Extracting %s to %s' % ( filepath, work_directory))
-    os.system('tar xf '+filepath)
-  return filepath.replace(".tar","")
-
-def spectro_batch(batch_size=10):
-  return spectro_batch_generator(batch_size)
-
 def speaker(file):  # vom Dateinamen
   # if not "_" in file:
   #   return "Unknown"
   return file.split("_")[0]
   #return file.split("_")[1]
 
-def get_speakers(path=pcm_path):
+# change this function to allow for input path
+def get_speakers(path):
   files = os.listdir(path)
+  print('number of files: %s' %len(files))
   def nobad(file):
-    return "_" in file and not "." in file.split("_")[1]
+    return "_" in file and not "." in file.split("_")[0]
   speakers=list(set(map(speaker,filter(nobad,files))))
   print(len(speakers)," speakers: ",speakers)
   return speakers
@@ -87,7 +52,7 @@ def get_speakers(path=pcm_path):
 def load_wav_file(name):
   f = wave.open(name, "rb")
   chunk = []
-  data0 = f.readframes(CHUNK)
+  data0 = f.readframes(Source.CHUNK)
   while data0 != '':  # f.getnframes()
     # data=numpy.fromstring(data0, dtype='float32')
     # data = numpy.fromstring(data0, dtype='uint16')
@@ -95,66 +60,26 @@ def load_wav_file(name):
     data = (data + 128) / 255.  # 0-1 for Better convergence
     # chunks.append(data)
     chunk.extend(data)
-    data0 = f.readframes(CHUNK)
+    data0 = f.readframes(Source.CHUNK)
   # finally trim:
-  chunk = chunk[0:CHUNK * 2]  # should be enough for now -> cut
-  chunk.extend(numpy.zeros(CHUNK * 2 - len(chunk)))  # fill with padding 0's
+  chunk = chunk[0:Source.CHUNK * 2]  # should be enough for now -> cut
+  chunk.extend(numpy.zeros(Source.CHUNK * 2 - len(chunk)))  # fill with padding 0's
   return chunk
-
-
-def spectro_batch_generator(batch_size=10,width=64,source_data=Source.DIGIT_SPECTROS,target=Target.digits):
-  # maybe_download(Source.NUMBER_IMAGES , DATA_DIR)
-  # maybe_download(Source.SPOKEN_WORDS, DATA_DIR)
-  path=maybe_download(source_data, DATA_DIR)
-  path=path.replace("_spectros","")# HACK! remove!
-  height = width
-  batch = []
-  labels = []
-  speakers=get_speakers(path)
-  if target==Target.digits: num_classes=10
-  if target==Target.first_letter: num_classes=32
-  files = os.listdir(path)
-  # shuffle(files) # todo : split test_fraction batch here!
-  # files=files[0:int(len(files)*(1-test_fraction))]
-  print("Got %d source data files from %s"%(len(files),path))
-  while True:
-    # print("shuffling source data files")
-    shuffle(files)
-    for image_name in files:
-      if not "_" in image_name: continue # bad !?!
-      image = skimage.io.imread(path + "/" + image_name).astype(numpy.float32)
-      # image.resize(width,height) # lets see ...
-      data = image / 255.  # 0-1 for Better convergence
-      data = data.reshape([width * height])  # tensorflow matmul needs flattened matrices wtf
-      batch.append(list(data))
-      # classe=(ord(image_name[0]) - 48)  # -> 0=0 .. A:65-48 ... 74 for 'z'
-      classe = (ord(image_name[0]) - 48) % 32# -> 0=0  17 for A, 10 for z ;)
-      labels.append(dense_to_one_hot(classe,num_classes))
-      if len(batch) >= batch_size:
-        yield batch, labels
-        batch = []  # Reset for next batch
-        labels = []
-
 
 # If you set dynamic_pad=True when calling tf.train.batch the returned batch will be automatically padded with 0s. Handy! A lower-level option is to use tf.PaddingFIFOQueue.
 # only apply to a subset of all images at one time
-def wave_batch_generator(source,target, speakers,batch_size=10): #speaker
-  #if target == Target.speaker: speakers=get_speakers()
+def wave_batch_generator(speakers,batch_size, data): #speaker
   speakers=speakers
   batch_waves = []
   labels = []
-  # input_width=CHUNK*6 # wow, big!!
-  new_data = '/home/cc/Data/all/'
-  files = os.listdir(new_data) # this has to be my data!
+  files = os.listdir(data)
   while True:
     shuffle(files)
     for wav in files:
-      #print(wav)
       if not wav.endswith(".wav"):continue
       labels.append(one_hot_from_item(speaker(wav), speakers))
-      chunk = load_wav_file(new_data+wav)
+      chunk = load_wav_file(data+wav)
       batch_waves.append(chunk)
-      # batch_waves.append(chunks[input_width])
       if len(batch_waves) >= batch_size:
         yield batch_waves, labels
         batch_waves = []  # Reset for next batch
@@ -293,7 +218,7 @@ def extract_images(names_file,train):
   return image_files
 
 
-def read_data_sets(train_dir,source_data=Source.NUMBER_IMAGES, fake_data=False, one_hot=True):
+def read_data_sets(train_dir,source_data, fake_data=False, one_hot=True):
   class DataSets(object):
     pass
   data_sets = DataSets()
