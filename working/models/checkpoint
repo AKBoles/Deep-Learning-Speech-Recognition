@@ -1,0 +1,2 @@
+model_checkpoint_path: "devclean_train_delta.tflearn"
+all_model_checkpoint_paths: "devclean_train_delta.tflearn"
