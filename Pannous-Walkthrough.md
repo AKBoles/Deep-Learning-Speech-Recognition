@@ -55,11 +55,7 @@ Essentially, assuming the data is already downloaded, the script does the follow
     net = tflearn.regression(net, optimizer='adam', loss='categorical_crossentropy')
     ~~~
     
-    These lines are defining a network that looks like the following image:
-    
-    ![Original Network Image](https://github.com/AKBoles/Deep-Learning-Speech-Recognition/blob/master/images/PannousSpeakerClassification.png)
-    
-    As can be seen, the data is first input into `FC1` (or the first fully connected layer) and then into the dropout and then the second fully connected layer. Note that `FC2` (second fully connected layer) is the first to connect to `Accuracy` and `Crossentropy`. This is because `FC2` feeds directly into `Regress1` which performs a regression using cross entropy.
+    As can be seen, the data is first input into the first fully connected layer and then into the dropout and the second fully connected layer. Note that the second fully connected layer is the first to connect to the accuracy and cross entropy steps. This is because the second fully connected layer feeds directly into a regression that uses cross entropy.
     
 4. The next step in the script is to train the model using the defined network. Using TFLearn, this only requires two lines of code:
 
@@ -84,8 +80,8 @@ Essentially, assuming the data is already downloaded, the script does the follow
     print("predicted speaker for %s : result = %s "%(demo_file,result))
     ~~~
     
-    As can be seen, the `demo_file` is fed into `model.predict`. This creates a one-hot vector which is then converted into an individual speaker using `one_hot_to_item`. The following image shows a screenshot of the last couple of epochs and the output of the script being run:
+    As can be seen, the `demo_file` is fed into `model.predict`. This creates a one-hot vector which is then converted into an individual speaker using `one_hot_to_item`. 
     
-    ![Original Network Output](https://github.com/AKBoles/Deep-Learning-Speech-Recognition/blob/master/images/PannousSpeakerClassOutput.png)
-    
-    The result is as hoped: Bruce was speaking and Bruce was predicted! That is good news. The next step is to perform this architecture using a different data set.
+    The result was as hoped: Bruce was speaking and Bruce was predicted! That is good news. The next step is to perform this architecture using a different data set.
+
+    It should be noted that this architecture performs exceptionally well on a training set but not so great on the testing set. As such, other methods have been explored such as using the MFCC information to train a stronger classification network.
