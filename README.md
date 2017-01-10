@@ -19,5 +19,13 @@ The data being used for this project can be found at: http://www.openslr.org/12/
    
        To see more of an in-depth walkthrough of how Pannous approaches the speaker classification problem, please see `Pannous-Walkthrough.md`.
        
+### Installation Requirements ###
+
+    - Librosa
+    
+    - Pydub
+    
+    - TFLearn
+
 ### Github Navigation ###
 
